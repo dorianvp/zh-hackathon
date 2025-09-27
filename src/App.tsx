@@ -1,5 +1,4 @@
-import { WalletInterface } from "./components/wallet-interface";
-import "./index.css";
+import { WalletInterface } from "./routes/Swap/swap-interface";
 
 function App() {
 	return (

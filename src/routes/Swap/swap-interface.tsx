@@ -17,8 +17,8 @@ import {
 import { Separator } from "@/components/ui/separator";
 import {
 	AlertCircle,
+	AntennaIcon,
 	ArrowDownLeft,
-	ArrowUpRight,
 	CheckCircle,
 	Clock,
 	Coins,
@@ -32,6 +32,7 @@ import {
 	RefreshCw,
 	Settings,
 	Shield,
+	SendIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -287,11 +288,11 @@ export function WalletInterface() {
 					<div className="flex items-center justify-between mb-8">
 						<div className="flex items-center gap-3">
 							<div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-								<Shield className="w-7 h-7 text-primary-foreground" />
+								<AntennaIcon className="w-7 h-7 text-primary-foreground" />
 							</div>
 							<div>
 								<h1 className="text-3xl font-bold text-foreground">
-									Zcash Wallet
+									ZHH Aklda
 								</h1>
 							</div>
 						</div>
@@ -361,7 +362,7 @@ export function WalletInterface() {
 						<Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
 							<div className="flex items-center gap-4 mb-4">
 								<div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center">
-									<ArrowUpRight className="w-6 h-6 text-accent" />
+									<SendIcon className="w-6 h-6 text-accent" />
 								</div>
 								<div>
 									<h3 className="text-xl font-semibold text-foreground">
@@ -378,7 +379,7 @@ export function WalletInterface() {
 						<Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
 							<div className="flex items-center gap-4 mb-4">
 								<div className="w-12 h-12 bg-muted/50 rounded-lg flex items-center justify-center">
-									<Shield className="w-6 h-6 text-muted-foreground" />
+									<ArrowDownLeft className="w-6 h-6 text-muted-foreground" />
 								</div>
 								<div>
 									<h3 className="text-xl font-semibold text-foreground">
@@ -444,7 +445,7 @@ export function WalletInterface() {
 										{tx.type === "received" ? (
 											<ArrowDownLeft className="w-6 h-6 text-primary" />
 										) : (
-											<ArrowUpRight className="w-6 h-6 text-accent" />
+											<SendIcon className="w-6 h-6 text-accent" />
 										)}
 									</div>
 									<div className="flex-1">
@@ -962,7 +963,7 @@ export function WalletInterface() {
 									</span>
 									{index < swapSteps.length - 1 && (
 										<div
-											className={`w-16 h-px mx-6 ${step.completed ? "bg-primary" : "bg-border"}`}
+											className={`w-40 h-px mx-6 ${step.completed ? "bg-primary" : "bg-border"}`}
 										/>
 									)}
 								</div>
