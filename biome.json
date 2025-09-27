@@ -1,0 +1,8 @@
+{
+	"files": {
+		"includes": ["src/**/*.{js,jsx,ts,tsx}"]
+	},
+	"linter": {
+		"includes": ["**", "!**/node_modules/**", "!**/dist/**", "!**/build/**"]
+	}
+}

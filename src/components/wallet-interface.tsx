@@ -1,32 +1,12 @@
+/** biome-ignore-all lint/correctness/useUniqueElementIds: <Values are known> */
 "use client";
 
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
-import {
-	ArrowDownLeft,
-	Shield,
-	Eye,
-	EyeOff,
-	Coins,
-	CheckCircle,
-	Clock,
-	AlertCircle,
-	Copy,
-	Settings,
-	HelpCircle,
-	QrCode,
-	RefreshCw,
-	ExternalLink,
-	CreditCard,
-	AntennaIcon,
-	SendIcon,
-} from "lucide-react";
 import {
 	Select,
 	SelectContent,
@@ -34,6 +14,26 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import {
+	AlertCircle,
+	ArrowDownLeft,
+	ArrowUpRight,
+	CheckCircle,
+	Clock,
+	Coins,
+	Copy,
+	CreditCard,
+	ExternalLink,
+	Eye,
+	EyeOff,
+	HelpCircle,
+	QrCode,
+	RefreshCw,
+	Settings,
+	Shield,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 
 type OnrampStep =
 	| "amount"
@@ -92,20 +92,23 @@ export function WalletInterface() {
 	const [quote, setQuote] = useState<Quote | null>(null);
 	const [swapOrder, setSwapOrder] = useState<SwapOrder | null>(null);
 	const [timeRemaining, setTimeRemaining] = useState<number>(0);
+	const [inputMode, setInputMode] = useState<"pay" | "receive">("pay");
+	const [isLoadingQuote, setIsLoadingQuote] = useState(false);
 
 	// Mock assets data
 	const assets: Asset[] = [
 		{ assetId: "btc", symbol: "BTC", chain: "Bitcoin", decimals: 8 },
-		{ assetId: "xmr", symbol: "XMR", chain: "Monero", decimals: 8 },
-		{
-			assetId: "eth",
-			symbol: "ETH",
-			chain: "Ethereum",
-			decimals: 18,
-			memoRequired: true,
-		},
+		{ assetId: "eth", symbol: "ETH", chain: "Ethereum", decimals: 18 },
 		{ assetId: "usdc", symbol: "USDC", chain: "Ethereum", decimals: 6 },
 		{ assetId: "usdt", symbol: "USDT", chain: "Ethereum", decimals: 6 },
+		{
+			assetId: "xrp",
+			symbol: "XRP",
+			chain: "Ripple",
+			decimals: 6,
+			memoRequired: true,
+		},
+		{ assetId: "ada", symbol: "ADA", chain: "Cardano", decimals: 6 },
 	];
 
 	const steps = [
@@ -131,11 +134,10 @@ export function WalletInterface() {
 	];
 
 	const swapSteps = [
-		{ id: "select", label: "Select", completed: currentStep !== "select" },
 		{
-			id: "quote",
-			label: "Quote",
-			completed: ["deposit", "status"].includes(currentStep),
+			id: "select",
+			label: "Select & Quote",
+			completed: currentStep !== "select",
 		},
 		{ id: "deposit", label: "Deposit", completed: currentStep === "status" },
 		{ id: "status", label: "Status", completed: false },
@@ -168,18 +170,100 @@ export function WalletInterface() {
 		return `${mins}:${secs.toString().padStart(2, "0")}`;
 	};
 
-	const handleGetQuote = async () => {
-		// Mock API call
-		setQuote({
-			expectedOut: (Number.parseFloat(amount) * 0.95).toFixed(4),
-			fees: (Number.parseFloat(amount) * 0.005).toFixed(4),
-			expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
-		});
-		setTimeRemaining(15 * 60); // 15 minutes
-		setCurrentStep("quote");
+	const fetchQuote = async (
+		inputAmount: string,
+		asset: Asset,
+		mode: "pay" | "receive",
+	) => {
+		if (!inputAmount || !asset || Number.parseFloat(inputAmount) <= 0) {
+			setQuote(null);
+			return;
+		}
+
+		setIsLoadingQuote(true);
+		try {
+			// Mock API call - replace with real API
+			await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate network delay
+
+			const mockExchangeRate = 0.95;
+			const fees = Number.parseFloat(inputAmount) * 0.005;
+
+			let expectedOut: string;
+			if (mode === "pay") {
+				expectedOut = (
+					Number.parseFloat(inputAmount) * mockExchangeRate
+				).toFixed(6);
+			} else {
+				expectedOut = inputAmount; // User wants to receive this amount
+			}
+
+			setQuote({
+				expectedOut,
+				fees: fees.toFixed(6),
+				expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
+			});
+			setTimeRemaining(15 * 60); // 15 minutes
+		} catch (error) {
+			console.error("Failed to fetch quote:", error);
+			setQuote(null);
+		} finally {
+			setIsLoadingQuote(false);
+		}
+	};
+
+	// const handleAmountChange = (value: string) => {
+	//   setAmount(value)
+	//   if (selectedAsset) {
+	//     fetchQuote(value, selectedAsset, inputMode)
+	//   }
+	// }
+
+	// const handleModeToggle = (mode: "pay" | "receive") => {
+	//   setInputMode(mode)
+	//   if (amount && selectedAsset) {
+	//     fetchQuote(amount, selectedAsset, mode)
+	//   }
+	// }
+
+	// const handleAssetChange = (assetId: string) => {
+	//   const asset = assets.find((a) => a.assetId === assetId) || null
+	//   setSelectedAsset(asset)
+	//   if (amount && asset) {
+	//     fetchQuote(amount, asset, inputMode)
+	//   }
+	// }
+
+	const handleAmountChange = (value: string) => {
+		setAmount(value);
+		// Clear existing quote when amount changes
+		setQuote(null);
+		setTimeRemaining(0);
+	};
+
+	const handleModeToggle = (mode: "pay" | "receive") => {
+		setInputMode(mode);
+		// Clear existing quote when mode changes
+		setQuote(null);
+		setTimeRemaining(0);
+	};
+
+	const handleAssetChange = (assetId: string) => {
+		const asset = assets.find((a) => a.assetId === assetId) || null;
+		setSelectedAsset(asset);
+		// Clear existing quote when asset changes
+		setQuote(null);
+		setTimeRemaining(0);
+	};
+
+	const handleGetQuote = () => {
+		if (selectedAsset && amount && Number.parseFloat(amount) > 0) {
+			fetchQuote(amount, selectedAsset, inputMode);
+		}
 	};
 
 	const handleConfirmSwap = async () => {
+		if (!quote) return;
+
 		// Mock API call
 		setSwapOrder({
 			quoteId: `swap_${Math.random().toString(36).substr(2, 9)}`,
@@ -203,11 +287,11 @@ export function WalletInterface() {
 					<div className="flex items-center justify-between mb-8">
 						<div className="flex items-center gap-3">
 							<div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-								<AntennaIcon className="w-7 h-7 text-primary-foreground" />
+								<Shield className="w-7 h-7 text-primary-foreground" />
 							</div>
 							<div>
 								<h1 className="text-3xl font-bold text-foreground">
-									ZHH Aklda
+									Zcash Wallet
 								</h1>
 							</div>
 						</div>
@@ -276,25 +360,8 @@ export function WalletInterface() {
 
 						<Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
 							<div className="flex items-center gap-4 mb-4">
-								<div className="w-12 h-12 bg-muted/50 rounded-lg flex items-center justify-center">
-									<ArrowDownLeft className="w-6 h-6 text-muted-foreground" />
-								</div>
-								<div>
-									<h3 className="text-xl font-semibold text-foreground">
-										Receive ZEC
-									</h3>
-									<p className="text-muted-foreground">Generate address</p>
-								</div>
-							</div>
-							<Button variant="outline" className="w-full bg-transparent">
-								Receive
-							</Button>
-						</Card>
-
-						<Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
-							<div className="flex items-center gap-4 mb-4">
 								<div className="w-12 h-12 bg-accent/20 rounded-lg flex items-center justify-center">
-									<SendIcon className="w-6 h-6 text-accent" />
+									<ArrowUpRight className="w-6 h-6 text-accent" />
 								</div>
 								<div>
 									<h3 className="text-xl font-semibold text-foreground">
@@ -305,6 +372,23 @@ export function WalletInterface() {
 							</div>
 							<Button variant="outline" className="w-full bg-transparent">
 								Send Now
+							</Button>
+						</Card>
+
+						<Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+							<div className="flex items-center gap-4 mb-4">
+								<div className="w-12 h-12 bg-muted/50 rounded-lg flex items-center justify-center">
+									<Shield className="w-6 h-6 text-muted-foreground" />
+								</div>
+								<div>
+									<h3 className="text-xl font-semibold text-foreground">
+										Receive ZEC
+									</h3>
+									<p className="text-muted-foreground">Generate address</p>
+								</div>
+							</div>
+							<Button variant="outline" className="w-full bg-transparent">
+								Receive
 							</Button>
 						</Card>
 					</div>
@@ -360,7 +444,7 @@ export function WalletInterface() {
 										{tx.type === "received" ? (
 											<ArrowDownLeft className="w-6 h-6 text-primary" />
 										) : (
-											<SendIcon className="w-6 h-6 text-accent" />
+											<ArrowUpRight className="w-6 h-6 text-accent" />
 										)}
 									</div>
 									<div className="flex-1">
@@ -897,13 +981,7 @@ export function WalletInterface() {
 											<Label className="text-base font-medium">
 												Select cryptocurrency to swap
 											</Label>
-											<Select
-												onValueChange={(value) =>
-													setSelectedAsset(
-														assets.find((a) => a.assetId === value) || null,
-													)
-												}
-											>
+											<Select onValueChange={handleAssetChange}>
 												<SelectTrigger className="mt-3 h-12">
 													<SelectValue placeholder="Choose cryptocurrency" />
 												</SelectTrigger>
@@ -938,23 +1016,140 @@ export function WalletInterface() {
 										</div>
 
 										<div>
-											<Label htmlFor="amount" className="text-base font-medium">
-												Amount to swap
-											</Label>
-											<div className="mt-3">
+											<Label className="text-base font-medium">Amount</Label>
+											<div className="mt-3 space-y-4">
+												<div className="flex gap-2 p-1 bg-muted rounded-lg">
+													<Button
+														variant={inputMode === "pay" ? "default" : "ghost"}
+														size="sm"
+														onClick={() => handleModeToggle("pay")}
+														className="flex-1 h-8"
+													>
+														You Pay
+													</Button>
+													<Button
+														variant={
+															inputMode === "receive" ? "default" : "ghost"
+														}
+														size="sm"
+														onClick={() => handleModeToggle("receive")}
+														className="flex-1 h-8"
+													>
+														You Receive
+													</Button>
+												</div>
+
 												<div className="relative">
 													<Input
 														id="amount"
 														type="number"
 														placeholder="0.00"
 														value={amount}
-														onChange={(e) => setAmount(e.target.value)}
+														onChange={(e) => handleAmountChange(e.target.value)}
 														className="text-2xl h-16 pr-20 text-center"
 													/>
 													<div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground">
-														{selectedAsset?.symbol || ""}
+														{inputMode === "pay"
+															? selectedAsset?.symbol || ""
+															: "ZEC"}
 													</div>
 												</div>
+
+												{selectedAsset &&
+													amount &&
+													Number.parseFloat(amount) > 0 && (
+														<div className="space-y-3">
+															{!quote ? (
+																<Button
+																	onClick={handleGetQuote}
+																	disabled={isLoadingQuote}
+																	className="w-full bg-transparent"
+																	variant="outline"
+																>
+																	{isLoadingQuote ? (
+																		<>
+																			<RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+																			Getting Quote...
+																		</>
+																	) : (
+																		"Get Quote"
+																	)}
+																</Button>
+															) : (
+																<div className="bg-muted/50 rounded-lg p-4">
+																	<div className="flex items-center justify-between mb-3">
+																		<div className="text-center">
+																			<div className="text-lg font-semibold text-foreground">
+																				{inputMode === "pay"
+																					? amount
+																					: (
+																							Number.parseFloat(amount) / 0.95
+																						).toFixed(6)}{" "}
+																				{selectedAsset.symbol}
+																			</div>
+																			<div className="text-sm text-muted-foreground">
+																				You pay
+																			</div>
+																		</div>
+																		<div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
+																			<RefreshCw className="w-4 h-4 text-primary" />
+																		</div>
+																		<div className="text-center">
+																			<div className="text-lg font-semibold text-foreground">
+																				{inputMode === "receive"
+																					? amount
+																					: quote.expectedOut}{" "}
+																				ZEC
+																			</div>
+																			<div className="text-sm text-muted-foreground">
+																				You receive
+																			</div>
+																		</div>
+																	</div>
+
+																	<div className="space-y-2 text-sm border-t border-border pt-3">
+																		<div className="flex justify-between">
+																			<span className="text-muted-foreground">
+																				Network Fee
+																			</span>
+																			<span className="text-foreground">
+																				{quote.fees} {selectedAsset.symbol}
+																			</span>
+																		</div>
+																		<div className="flex justify-between">
+																			<span className="text-muted-foreground">
+																				Exchange Rate
+																			</span>
+																			<span className="text-foreground">
+																				1 {selectedAsset.symbol} = 0.95 ZEC
+																			</span>
+																		</div>
+																		{timeRemaining > 0 && (
+																			<div className="flex justify-between">
+																				<span className="text-muted-foreground">
+																					Quote expires
+																				</span>
+																				<span className="text-accent font-medium">
+																					{formatTime(timeRemaining)}
+																				</span>
+																			</div>
+																		)}
+																	</div>
+
+																	<Button
+																		onClick={handleGetQuote}
+																		disabled={isLoadingQuote}
+																		variant="ghost"
+																		size="sm"
+																		className="w-full mt-3"
+																	>
+																		<RefreshCw className="w-4 h-4 mr-2" />
+																		Refresh Quote
+																	</Button>
+																</div>
+															)}
+														</div>
+													)}
 											</div>
 										</div>
 
@@ -977,126 +1172,27 @@ export function WalletInterface() {
 										</div>
 
 										<Button
-											onClick={handleGetQuote}
+											onClick={handleConfirmSwap}
 											className="w-full h-12 text-base"
 											disabled={
 												!selectedAsset ||
 												!amount ||
 												!zcashAddress ||
-												Number.parseFloat(amount) <= 0
+												Number.parseFloat(amount) <= 0 ||
+												!quote ||
+												timeRemaining === 0
 											}
 										>
-											Get Quote
+											{!selectedAsset ||
+											!amount ||
+											Number.parseFloat(amount) <= 0
+												? "Select asset and enter amount"
+												: !quote
+													? "Get quote first"
+													: timeRemaining === 0
+														? "Quote expired - refresh quote"
+														: "Confirm Swap"}
 										</Button>
-									</div>
-								</Card>
-							)}
-
-							{currentStep === "quote" && quote && (
-								<Card className="p-8">
-									<div className="space-y-6">
-										<div className="flex items-center justify-between">
-											<h3 className="text-lg font-semibold text-foreground">
-												Swap Quote
-											</h3>
-											{timeRemaining > 0 && (
-												<div className="flex items-center gap-2 text-sm">
-													<Clock className="w-4 h-4 text-accent" />
-													<span className="text-accent font-medium">
-														Expires in {formatTime(timeRemaining)}
-													</span>
-												</div>
-											)}
-										</div>
-
-										<div className="bg-muted/50 rounded-lg p-6">
-											<div className="flex items-center justify-between mb-4">
-												<div className="text-center">
-													<div className="text-2xl font-bold text-foreground">
-														{amount} {selectedAsset?.symbol}
-													</div>
-													<div className="text-sm text-muted-foreground">
-														{selectedAsset?.chain}
-													</div>
-												</div>
-												<div className="w-8 h-8 bg-primary/20 rounded-full flex items-center justify-center">
-													<RefreshCw className="w-4 h-4 text-primary" />
-												</div>
-												<div className="text-center">
-													<div className="text-2xl font-bold text-foreground">
-														{quote.expectedOut} ZEC
-													</div>
-													<div className="text-sm text-muted-foreground">
-														Zcash
-													</div>
-												</div>
-											</div>
-
-											<Separator className="my-4" />
-
-											<div className="space-y-2 text-sm">
-												<div className="flex justify-between">
-													<span className="text-muted-foreground">
-														Network Fee
-													</span>
-													<span className="text-foreground">
-														{quote.fees} {selectedAsset?.symbol}
-													</span>
-												</div>
-												<div className="flex justify-between">
-													<span className="text-muted-foreground">
-														Exchange Rate
-													</span>
-													<span className="text-foreground">
-														1 {selectedAsset?.symbol} ={" "}
-														{(
-															Number.parseFloat(quote.expectedOut) /
-															Number.parseFloat(amount)
-														).toFixed(6)}{" "}
-														ZEC
-													</span>
-												</div>
-												<div className="flex justify-between">
-													<span className="text-muted-foreground">
-														Estimated Time
-													</span>
-													<span className="text-foreground">5-15 minutes</span>
-												</div>
-											</div>
-										</div>
-
-										<div className="bg-muted/50 rounded-lg p-4">
-											<div className="flex items-start gap-3">
-												<AlertCircle className="w-5 h-5 text-accent mt-0.5" />
-												<div className="space-y-1">
-													<div className="text-sm font-medium text-foreground">
-														Important
-													</div>
-													<div className="text-xs text-muted-foreground">
-														This quote is valid for {formatTime(timeRemaining)}.
-														After confirmation, you'll have the same time to
-														send your {selectedAsset?.symbol}.
-													</div>
-												</div>
-											</div>
-										</div>
-
-										<div className="flex gap-3">
-											<Button
-												variant="outline"
-												onClick={() => setCurrentStep("select")}
-												className="flex-1"
-											>
-												Back
-											</Button>
-											<Button
-												onClick={handleConfirmSwap}
-												className="flex-1"
-												disabled={timeRemaining === 0}
-											>
-												Confirm Swap
-											</Button>
-										</div>
 									</div>
 								</Card>
 							)}

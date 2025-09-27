@@ -1,8 +1,7 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
+/* 
 :root {
   --background: oklch(0.8452 0 0);
   --foreground: oklch(0.2393 0 0);
@@ -46,9 +45,9 @@
   --shadow-spread: 0px;
   --shadow-opacity: 0.4;
   --shadow-color: #000000;
-}
+} */
 
-.dark {
+:root {
   --background: oklch(0.2178 0 0);
   --foreground: oklch(0.9067 0 0);
   --card: oklch(0.2850 0 0);
