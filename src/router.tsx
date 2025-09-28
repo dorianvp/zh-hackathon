@@ -1,11 +1,14 @@
 import { HashRouter, Route, Routes } from "react-router";
-import App from "./App";
+import { Home } from "./routes/Home/home";
+import { WalletInterface } from "./routes/Swap/swap-interface";
 
 export function AppRouter() {
 	return (
 		<HashRouter>
 			<Routes>
-				<Route path="/" element={<App />} />
+				<Route path="/" element={<Home />} />
+
+				<Route path="/swap" element={<WalletInterface />} />
 			</Routes>
 		</HashRouter>
 	);
