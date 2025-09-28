@@ -15,6 +15,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import type { TokenRow } from "@/lib/server";
+import { useQuery } from "@tanstack/react-query";
 import {
 	AlertCircle,
 	AntennaIcon,
@@ -30,9 +32,9 @@ import {
 	HelpCircle,
 	QrCode,
 	RefreshCw,
+	SendIcon,
 	Settings,
 	Shield,
-	SendIcon,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -52,14 +54,6 @@ type SwapStatus =
 	| "failed"
 	| "expired";
 
-interface Asset {
-	assetId: string;
-	symbol: string;
-	chain: string;
-	decimals: number;
-	memoRequired?: boolean;
-}
-
 interface Quote {
 	expectedOut: string;
 	fees: string;
@@ -76,7 +70,44 @@ interface SwapOrder {
 	zecRecipient: string;
 }
 
+const API_BASE = import.meta.env.VITE_SERVER_URL;
+
 export function WalletInterface() {
+	const { isPending, error, data } = useQuery<TokenRow[]>({
+		queryKey: ["assets"],
+		queryFn: async () => {
+			const url = `${API_BASE}/api/tokens`;
+
+			const res = await fetch(url, {
+				headers: { "content-type": "application/json" },
+			});
+
+			const txt = await res.text();
+
+			if (!res.ok) throw new Error(`${res.status} ${txt}`);
+
+			try {
+				const json: TokenRow[] = JSON.parse(txt);
+
+				const sortedTokens = json.sort((a, b) =>
+					a.symbol.localeCompare(b.symbol),
+				);
+
+				console.log("✓ JSON:", sortedTokens);
+				return sortedTokens;
+			} catch (e) {
+				throw new Error(
+					`Expected JSON, got content-type=${res.headers.get("content-type")} body=${txt.slice(0, 200)}`,
+				);
+			}
+		},
+	});
+
+	const [assetList, setAssetList] = useState<TokenRow[]>([]);
+	useEffect(() => {
+		if (data) setAssetList(data);
+	}, [data]);
+
 	const [currentView, setCurrentView] = useState<View>("dashboard");
 	const [currentStep, setCurrentStep] = useState<OnrampStep | SwapStep>(
 		"amount",
@@ -88,29 +119,13 @@ export function WalletInterface() {
 	const [showBalance, setShowBalance] = useState(true);
 
 	// Swap state
-	const [selectedAsset, setSelectedAsset] = useState<Asset | null>(null);
+	const [selectedAsset, setSelectedAsset] = useState<TokenRow | null>(null);
 	const [zcashAddress] = useState("t1abc123def456ghi789jkl012mno345pqr678stu");
 	const [quote, setQuote] = useState<Quote | null>(null);
 	const [swapOrder, setSwapOrder] = useState<SwapOrder | null>(null);
 	const [timeRemaining, setTimeRemaining] = useState<number>(0);
 	const [inputMode, setInputMode] = useState<"pay" | "receive">("pay");
 	const [isLoadingQuote, setIsLoadingQuote] = useState(false);
-
-	// Mock assets data
-	const assets: Asset[] = [
-		{ assetId: "btc", symbol: "BTC", chain: "Bitcoin", decimals: 8 },
-		{ assetId: "eth", symbol: "ETH", chain: "Ethereum", decimals: 18 },
-		{ assetId: "usdc", symbol: "USDC", chain: "Ethereum", decimals: 6 },
-		{ assetId: "usdt", symbol: "USDT", chain: "Ethereum", decimals: 6 },
-		{
-			assetId: "xrp",
-			symbol: "XRP",
-			chain: "Ripple",
-			decimals: 6,
-			memoRequired: true,
-		},
-		{ assetId: "ada", symbol: "ADA", chain: "Cardano", decimals: 6 },
-	];
 
 	const steps = [
 		{ id: "amount", label: "Amount", completed: currentStep !== "amount" },
@@ -173,7 +188,7 @@ export function WalletInterface() {
 
 	const fetchQuote = async (
 		inputAmount: string,
-		asset: Asset,
+		asset: TokenRow,
 		mode: "pay" | "receive",
 	) => {
 		if (!inputAmount || !asset || Number.parseFloat(inputAmount) <= 0) {
@@ -249,7 +264,7 @@ export function WalletInterface() {
 	};
 
 	const handleAssetChange = (assetId: string) => {
-		const asset = assets.find((a) => a.assetId === assetId) || null;
+		const asset = assetList.find((a) => a.assetId === assetId) || null;
 		setSelectedAsset(asset);
 		// Clear existing quote when asset changes
 		setQuote(null);
@@ -269,7 +284,7 @@ export function WalletInterface() {
 		setSwapOrder({
 			quoteId: `swap_${Math.random().toString(36).substr(2, 9)}`,
 			depositAddress: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-			depositMemo: selectedAsset?.memoRequired ? "123456789" : undefined,
+			depositMemo: undefined,
 			expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
 			status: "pending",
 			zecRecipient: zcashAddress,
@@ -280,6 +295,10 @@ export function WalletInterface() {
 	const copyToClipboard = (text: string) => {
 		navigator.clipboard.writeText(text);
 	};
+
+	if (isPending) return "Loading...";
+
+	if (error) return "Error: " + error.message;
 
 	return (
 		<div className="min-h-screen bg-background">
@@ -987,7 +1006,7 @@ export function WalletInterface() {
 													<SelectValue placeholder="Choose cryptocurrency" />
 												</SelectTrigger>
 												<SelectContent>
-													{assets.map((asset) => (
+													{assetList.map((asset) => (
 														<SelectItem
 															key={asset.assetId}
 															value={asset.assetId}
@@ -1001,14 +1020,9 @@ export function WalletInterface() {
 																		{asset.symbol}
 																	</div>
 																	<div className="text-sm text-muted-foreground">
-																		{asset.chain}
+																		{asset.blockchain}
 																	</div>
 																</div>
-																{asset.memoRequired && (
-																	<Badge variant="outline" className="ml-auto">
-																		Memo Required
-																	</Badge>
-																)}
 															</div>
 														</SelectItem>
 													))}
