@@ -307,7 +307,7 @@ export function WalletInterface() {
 					<div className="flex items-center justify-between mb-8">
 						<div className="flex items-center gap-3">
 							<div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
-								<AntennaIcon className="w-7 h-7 text-primary-foreground" />
+								<AntennaIcon className="w-7 h-7 text-background" />
 							</div>
 							<div>
 								<h1 className="text-3xl font-bold text-foreground">
